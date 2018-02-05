@@ -1,11 +1,29 @@
 // -*- mode: groovy -*-
+
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 // Jenkins pipeline
 // See documents at https://jenkins.io/doc/book/pipeline/jenkinsfile/
 
 // mxnet libraries
 mx_lib = 'lib/libmxnet.so, lib/libmxnet.a, dmlc-core/libdmlc.a, nnvm/lib/libnnvm.a'
 // mxnet cmake libraries, in cmake builds we do not produce a libnvvm static library by default.
-mx_cmake_lib = 'build/libmxnet.so, build/libmxnet.a, build/dmlc-core/libdmlc.a'
+mx_cmake_lib = 'build/libmxnet.so, build/libmxnet.a, build/dmlc-core/libdmlc.a, build/tests/mxnet_unit_tests, build/3rdparty/openmp/runtime/src/libomp.so'
 // command to start a docker container
 docker_run = 'tests/ci_build/ci_build.sh'
 // timeout in minutes
@@ -482,7 +500,7 @@ try {
           init_git()
           unpack_lib('cpu')
           timeout(time: max_time, unit: 'MINUTES') {
-              sh "${docker_run} cpu ./perl-package/test.sh"
+            sh "${docker_run} cpu ./perl-package/test.sh"
           }
         }
       }
@@ -493,7 +511,18 @@ try {
           init_git()
           unpack_lib('gpu')
           timeout(time: max_time, unit: 'MINUTES') {
-              sh "${docker_run} gpu ./perl-package/test.sh"
+            sh "${docker_run} gpu ./perl-package/test.sh"
+          }
+        }
+      }
+    },
+    'Cpp: GPU': {
+      node('mxnetlinux-gpu') {
+        ws('workspace/ut-cpp-gpu') {
+          init_git()
+          unpack_lib('cmake_gpu', mx_cmake_lib)
+          timeout(time: max_time, unit: 'MINUTES') {
+            sh "${docker_run} gpu_mklml build/tests/mxnet_unit_tests"
           }
         }
       }
